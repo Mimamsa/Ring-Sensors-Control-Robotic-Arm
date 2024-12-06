@@ -1,0 +1,30 @@
+{
+  # daq configurations
+  "daqs": [
+    {
+      "daq_type": "dummy",
+      "frequency": 100,
+    }
+  ],
+  # robot configurations
+  "robots": [
+    {
+      "robot_type": "dummy",
+      "robot_ip": "192.168.0.1",
+      "frequency": 125,
+      "robot_obs_latency": 0.0001,
+      "robot_action_latency": 0.1,
+    }
+  ],
+  # gripper configurations
+  "grippers": [
+    {
+      "gripper_type": "dummy",
+      "gripper_ip": "192.168.0.1",
+      "gripper_port": 0,
+      "frequency": 10,
+      "gripper_obs_latency": 0.01,
+      "gripper_action_latency": 0.1,
+    }
+  ],
+}

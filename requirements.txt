@@ -1,0 +1,6 @@
+atomics==1.0.2
+click==8.1.7
+numpy==1.26.2
+scipy==1.14.1
+pynput==1.7.7
+PyYAML==5.4.1
