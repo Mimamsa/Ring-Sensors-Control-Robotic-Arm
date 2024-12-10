@@ -138,7 +138,7 @@ class DummyGripperController(mp.Process):
         try:
             # create intance
             if self.verbose:
-                print('[DummyGripperController] Connect to gripper: {self.hostname}')
+                print("[DummyGripperController] Connect to gripper: {self.hostname}")
             # -- CONNECT TO A GRIPPER THIS LINE --
 
             # home gripper to initialize

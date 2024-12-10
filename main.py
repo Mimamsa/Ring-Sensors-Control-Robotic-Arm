@@ -65,8 +65,7 @@ def main(config_file, model_path, output, frequency):
                         # timestamps,
                         # compensate_latency)
 
-
-                    # visualize
+                    # visualize actions
 
 
                     # handle key presses

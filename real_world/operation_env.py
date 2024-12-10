@@ -2,6 +2,7 @@
 - DummyDataAquisition x1
 - DummyRobotController x1
 - DummyGripperController x1
+- TENGVisualizer x1
 """
 import math
 import numpy as np
@@ -9,6 +10,7 @@ from multiprocessing.managers import SharedMemoryManager
 from real_world.dummy_daq import DummyDataAquisition
 from real_world.dummy_robot_controller import DummyRobotController
 from real_world.dummy_gripper_controller import DummyGripperController
+from real_world.teng_visualizer import TENGVisualizer
 from common.interpolation_util import get_interp1d
 
 
@@ -24,7 +26,7 @@ class OperationEnv:
             frequency=100,  # frequency for sampling all observations (daq only for now)
             daq_obs_horizon=100,  # input of model in time axis
             # vis params
-            # enable_cam_vis=True,
+            enable_teng_vis=True,
             # cam_vis_resolution=(960, 960),
             # shared memory
             shm_manager=None
@@ -62,7 +64,7 @@ class OperationEnv:
                     robot_ip = rc['robot_ip'],
                     frequency = rc['frequency'],
                     receive_latency=rc['robot_obs_latency'],
-                    verbose = True
+                    verbose = False
                 )
             else:
                 raise NotImplementedError()
@@ -86,12 +88,20 @@ class OperationEnv:
                 raise NotImplementedError()
             grippers.append(this_gripper)
 
+        # Load teng visualizer
+        teng_vis = None
+        if enable_teng_vis:
+            teng_vis = TENGVisualizer(
+                    daqs=daqs
+                )
+
         self.daqs = daqs
         self.daqs_config = daqs_config
         self.robots = robots
         self.robots_config = robots_config
         self.grippers = grippers
         self.grippers_config = grippers_config
+        self.teng_vis = teng_vis
 
         self.frequency = frequency
         self.daq_obs_horizon = daq_obs_horizon
@@ -117,6 +127,8 @@ class OperationEnv:
             robot.start(wait=False)
         for gripper in self.grippers:
             gripper.start(wait=False)
+        if self.teng_vis is not None:
+            self.teng_vis.start(wait=False)
         if wait:
             self.start_wait()
 
@@ -128,6 +140,8 @@ class OperationEnv:
             robot.stop(wait=False)
         for gripper in self.grippers:
             gripper.stop(wait=False)
+        if self.teng_vis is not None:
+            self.teng_vis.stop(wait=False)
         if wait:
             self.stop_wait()
 
@@ -138,6 +152,8 @@ class OperationEnv:
             robot.start_wait()
         for gripper in self.grippers:
             gripper.start_wait()
+        if self.teng_vis is not None:
+            self.teng_vis.start_wait()
 
     def stop_wait(self):
         for daq in self.daqs:
@@ -146,6 +162,8 @@ class OperationEnv:
             robot.stop_wait()
         for gripper in self.grippers:
             gripper.stop_wait()
+        if self.teng_vis is not None:
+            self.teng_vis.stop_wait()
 
     # ========= context manager ===========
     def __enter__(self):
@@ -188,8 +206,8 @@ class OperationEnv:
             obs_data.update(daq_obs)
 
         else:
-            obs_data['timestamp'] = self.last_daq_data['timestamp'][-100:]
-            obs_data['daq_values'] = self.last_daq_data['daq_values'][-100:]
+            obs_data['timestamp'] = self.last_daq_data['timestamp'][-self.daq_obs_horizon:]
+            obs_data['daq_values'] = self.last_daq_data['daq_values'][-self.daq_obs_horizon:]
 
         return obs_data
 
