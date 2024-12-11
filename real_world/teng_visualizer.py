@@ -16,14 +16,14 @@ class TENGVisualizer(mp.Process):
         window_name='TENG Vis',
         vis_fps=20,
         moving_window=True,
-        verbose = False):
+        verbose=False):
         super().__init__()
 
         self.fig = plt.figure()
         
         self.ax = plt.gca()
         # self.axax.set_xlim([xmin, xmax])
-        self.ax.set_ylim([0, 1])
+        self.ax.set_ylim([-1, 1])
 
         self.daqs = daqs
         self.daq_obs_horizon = daq_obs_horizon
@@ -63,7 +63,7 @@ class TENGVisualizer(mp.Process):
         cv2.setNumThreads(1)
 
         # wati daq data
-        time.sleep(1)
+        time.sleep(3)
 
         last_timestamp = 0.
         while not self.stop_event.is_set():
@@ -82,12 +82,13 @@ class TENGVisualizer(mp.Process):
             # Plot 6 axis data
             if self.moving_window:
                 self.ax.set_xlim([last_timestamp-3, last_timestamp+1])  # keep track on latest 3 seconds
-            plt.plot(new_timestamp, new_vis_data[:,0], 'b-', \
-                new_timestamp, new_vis_data[:,1], 'g-',
-                new_timestamp, new_vis_data[:,2], 'r-',
-                new_timestamp, new_vis_data[:,3], 'c-',
-                new_timestamp, new_vis_data[:,4], 'm-',
-                new_timestamp, new_vis_data[:,5], 'y-')
+            plt.plot(new_timestamp, new_vis_data[:,0], 'bo')
+            #plt.plot(new_timestamp, new_vis_data[:,0], 'bo-',
+            #    new_timestamp, new_vis_data[:,1], 'go-',
+            #    new_timestamp, new_vis_data[:,2], 'ro-',
+            #    new_timestamp, new_vis_data[:,3], 'co-',
+            #    new_timestamp, new_vis_data[:,4], 'mo-',
+            #    new_timestamp, new_vis_data[:,5], 'yo-')
             self.fig.canvas.draw()
 
             # Converting matplotlib figure to OpenCV image

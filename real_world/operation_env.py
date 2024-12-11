@@ -8,6 +8,7 @@ import math
 import numpy as np
 from multiprocessing.managers import SharedMemoryManager
 from real_world.dummy_daq import DummyDataAquisition
+from real_world.finger_daq import FingerDataAquisition
 from real_world.dummy_robot_controller import DummyRobotController
 from real_world.dummy_gripper_controller import DummyGripperController
 from real_world.teng_visualizer import TENGVisualizer
@@ -24,7 +25,7 @@ class OperationEnv:
             output_dir,
             # env params
             frequency=100,  # frequency for sampling all observations (daq only for now)
-            daq_obs_horizon=100,  # input of model in time axis
+            daq_obs_horizon=10,  # input of model in time axis
             # vis params
             enable_teng_vis=True,
             # cam_vis_resolution=(960, 960),
@@ -42,8 +43,12 @@ class OperationEnv:
 
         # Load DAQ
         for dc in daqs_config:
-            if dc['daq_type'].startswith('cDAQ-V1102'):
-                raise NotImplementedError()
+            if dc['daq_type'].startswith('finger_daq'):
+                this_daq = FingerDataAquisition(
+                    shm_manager = shm_manager,
+                    frequency = dc['frequency'],
+                    verbose = False
+                )
             elif dc['daq_type'].startswith('dummy'):
                 this_daq = DummyDataAquisition(
                     shm_manager = shm_manager,
