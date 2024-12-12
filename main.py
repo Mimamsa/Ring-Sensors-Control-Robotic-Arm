@@ -41,8 +41,8 @@ def main(config_file, model_path, output, frequency):
 
             # warm up model
 
-
-            time.sleep(3)
+            # Wait for DAQ data generated
+            time.sleep(2)
 
             print('Ready!')
             while True:

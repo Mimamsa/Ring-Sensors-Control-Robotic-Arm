@@ -14,12 +14,14 @@ class FingerDataAquisition(mp.Process):
     def __init__(self,
             shm_manager: SharedMemoryManager,
             frequency=100,
+            samples_per_read=10,
             get_max_k=None,
             launch_timeout=3,
             verbose=False
         ):
         super().__init__(name="FingerDataAquisition")
         self.frequency = frequency
+        self.samples_per_read = samples_per_read
         self.launch_timeout = launch_timeout
         self.verbose = verbose
         self.keep_running = True
@@ -95,7 +97,8 @@ class FingerDataAquisition(mp.Process):
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai5", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai6", min_val=-10.0, max_val=10.0)
                 # Set DAQ sampling rate
-                task.timing.cfg_samp_clk_timing(100, source="", sample_mode=AcquisitionType.CONTINUOUS, samps_per_chan=100)
+                task.timing.cfg_samp_clk_timing(self.frequency, source="", 
+                    sample_mode=AcquisitionType.CONTINUOUS, samps_per_chan=self.samples_per_read)
 
                 # Set DAQ multi-channel reader
                 reader = AnalogMultiChannelReader(task.in_stream)
@@ -110,16 +113,16 @@ class FingerDataAquisition(mp.Process):
                     # Generate signals
                     #daq_values = task.read()  # list of 6 float
                     #daq_values = np.array(daq_values)
-                    daq_values = np.zeros((6,100), dtype=np.float64)
-                    reader.read_many_sample(data=daq_values, number_of_samples_per_channel=100)  # read from DAQ
+                    daq_values = np.zeros((6, self.samples_per_read), dtype=np.float64)
+                    reader.read_many_sample(data=daq_values, number_of_samples_per_channel=self.samples_per_read)  # read from DAQ
 
                     # stamp timestamps: latest 100 timestamps before `time.monotonic() - t_start`
                     # [::-1] is reversing 1D array
                     dt = 1 / self.frequency
-                    timestamps = time.monotonic() - t_start - (np.arange(100)[::-1] * dt)
+                    timestamps = time.monotonic() - t_start - (np.arange(self.samples_per_read)[::-1] * dt)
 
                     # Recursively save timestamps & DAQ values 
-                    for i in range(100):
+                    for i in range(self.samples_per_read):
                         message = {
                             'timestamp': timestamps[i],
                             'daq_values': daq_values[:,i]
@@ -132,8 +135,8 @@ class FingerDataAquisition(mp.Process):
                     iter_idx += 1
 
                     # regulate frequency
-                    #dt = 1 / self.frequency
-                    t_end = t_start + dt * iter_idx
+                    dt_per_read = dt * self.samples_per_read
+                    t_end = t_start + dt_per_read * iter_idx
                     precise_wait(t_end=t_end, time_func=time.monotonic)
 
                     if self.verbose:

@@ -2,6 +2,7 @@
 """
 import time
 import cv2
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing as mp
@@ -12,24 +13,22 @@ from common.precise_sleep import precise_wait, precise_sleep
 class TENGVisualizer(mp.Process):
     def __init__(self,
         daqs,
-        daq_obs_horizon=100,
         window_name='TENG Vis',
-        vis_fps=20,
-        moving_window=True,
+        vis_fps=10,
+        display_window_size=200, # samples
+        daq_frequency=100,
         verbose=False):
         super().__init__()
 
         self.fig = plt.figure()
-        
         self.ax = plt.gca()
-        # self.axax.set_xlim([xmin, xmax])
-        self.ax.set_ylim([-1, 1])
+        self.ax.set_ylim([-0.05, 0.05])
 
         self.daqs = daqs
-        self.daq_obs_horizon = daq_obs_horizon
         self.window_name = window_name
         self.vis_fps = vis_fps
-        self.moving_window = moving_window
+        self.display_window_size = display_window_size
+        self.daq_frequency = daq_frequency
         self.verbose = verbose
         # shared variables
         self.stop_event = mp.Event()
@@ -62,27 +61,44 @@ class TENGVisualizer(mp.Process):
 
         cv2.setNumThreads(1)
 
-        # wati daq data
-        time.sleep(3)
+        # Wait for DAQ data generated
+        time.sleep(2)
+
+        # Display buffer
+        viz_timestamps = np.zeros((self.display_window_size,), dtype=np.float64)
+        viz_daq_values = np.zeros((self.display_window_size, 6), dtype=np.float64)
 
         last_timestamp = 0.
         while not self.stop_event.is_set():
+            # Clear axis
+            # If axis is not cleared in each iteration, the display latency gains over time.
+            plt.cla()
+        
             # Get DAQ data
             start_t = time.monotonic()
-            daq_dict = self.daqs[0].get_k(k=self.daq_obs_horizon)
-            timestamp = daq_dict['timestamp']
-            vis_data = daq_dict['daq_values']
+            k = math.ceil(self.daq_frequency/self.vis_fps) + 10
+            daq_dict = self.daqs[0].get_k(k=k)
+            timestamps = daq_dict['timestamp']
+            daq_values = daq_dict['daq_values']
 
-            # Plot only new points
-            is_new = timestamp > last_timestamp
-            new_timestamp = timestamp[is_new]
-            new_vis_data = vis_data[is_new]
-            last_timestamp = timestamp[-1]
+            # Accumulate display data
+            is_new = timestamps > last_timestamp
+            new_timestamps = timestamps[is_new]
+            new_daq_values = daq_values[is_new]
+            last_timestamp = timestamps[-1]
 
-            # Plot 6 axis data
-            if self.moving_window:
-                self.ax.set_xlim([last_timestamp-3, last_timestamp+1])  # keep track on latest 3 seconds
-            plt.plot(new_timestamp, new_vis_data[:,0], 'bo')
+            viz_timestamps = np.concatenate((viz_timestamps, new_timestamps), axis=0)
+            viz_daq_values = np.concatenate((viz_daq_values, new_daq_values), axis=0)
+            viz_timestamps = viz_timestamps[-self.display_window_size:]
+            viz_daq_values = viz_daq_values[-self.display_window_size:,:]
+
+            self.ax.set_ylim([-0.05, 0.05])
+            self.ax.set_xlim([last_timestamp - (self.display_window_size/self.daq_frequency),
+                last_timestamp+0.5])  # keep track on latest 2 seconds
+
+            # Plot only the first channel(for testing)
+            plt.plot(viz_timestamps, viz_daq_values[:,0], 'bo')
+            # plot all 6 channels
             #plt.plot(new_timestamp, new_vis_data[:,0], 'bo-',
             #    new_timestamp, new_vis_data[:,1], 'go-',
             #    new_timestamp, new_vis_data[:,2], 'ro-',
@@ -98,10 +114,14 @@ class TENGVisualizer(mp.Process):
 
             # Displaying the image:
             cv2.imshow(self.window_name, plot)
-            cv2.waitKey(1)
+            cv2.waitKey(1)  # wait 1 ms
 
             # Regulate frequency
             display_latency = time.monotonic() - start_t
             if self.verbose:
                 print('[TENGVisualizer] Display latency: {}'.format(display_latency))
-            precise_sleep((1/self.vis_fps)-display_latency)
+            sleep_time = (1/self.vis_fps) - display_latency  # seconds
+            if sleep_time < 0:
+                print('[TENGVisualizer] Please reduce the vis_fps.')
+            else:
+                precise_sleep(sleep_time)
