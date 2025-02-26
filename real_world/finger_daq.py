@@ -90,12 +90,12 @@ class FingerDataAquisition(mp.Process):
 
         try:
             with nidaqmx.Task() as task:
+                task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai0", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai1", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai2", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai3", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai4", min_val=-10.0, max_val=10.0)
                 task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai5", min_val=-10.0, max_val=10.0)
-                task.ai_channels.add_ai_voltage_chan("cDAQ1Mod1/ai6", min_val=-10.0, max_val=10.0)
                 # Set DAQ sampling rate
                 task.timing.cfg_samp_clk_timing(self.frequency, source="", 
                     sample_mode=AcquisitionType.CONTINUOUS, samps_per_chan=self.samples_per_read)

@@ -92,19 +92,19 @@ class TENGVisualizer(mp.Process):
             viz_timestamps = viz_timestamps[-self.display_window_size:]
             viz_daq_values = viz_daq_values[-self.display_window_size:,:]
 
-            self.ax.set_ylim([-0.05, 0.05])
+            self.ax.set_ylim([-0.3, 0.3])
             self.ax.set_xlim([last_timestamp - (self.display_window_size/self.daq_frequency),
                 last_timestamp+0.5])  # keep track on latest 2 seconds
 
             # Plot only the first channel(for testing)
-            plt.plot(viz_timestamps, viz_daq_values[:,0], 'bo')
+            #plt.plot(viz_timestamps, viz_daq_values[:,0], 'bo')
             # plot all 6 channels
-            #plt.plot(new_timestamp, new_vis_data[:,0], 'bo-',
-            #    new_timestamp, new_vis_data[:,1], 'go-',
-            #    new_timestamp, new_vis_data[:,2], 'ro-',
-            #    new_timestamp, new_vis_data[:,3], 'co-',
-            #    new_timestamp, new_vis_data[:,4], 'mo-',
-            #    new_timestamp, new_vis_data[:,5], 'yo-')
+            plt.plot(viz_timestamps, viz_daq_values[:,0], 'b-',
+                viz_timestamps, viz_daq_values[:,1], 'g-',
+                viz_timestamps, viz_daq_values[:,2], 'r-',
+                viz_timestamps, viz_daq_values[:,3], 'c-',
+                viz_timestamps, viz_daq_values[:,4], 'm-',
+                viz_timestamps, viz_daq_values[:,5], 'y-')
             self.fig.canvas.draw()
 
             # Converting matplotlib figure to OpenCV image
